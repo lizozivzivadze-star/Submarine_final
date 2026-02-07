@@ -26,6 +26,11 @@ const game = {
     // Game State
     isRunning: false,
     
+    // Audio System
+    audioEnabled: true,
+    audioContext: null,
+    ambientSound: null,
+    
     // Constants will be set based on difficulty
     config: {
         easy: {
@@ -182,6 +187,11 @@ const game = {
         console.log('Mission starting...');
         this.showScreen('control-room');
         
+        // Initialize audio on first mission
+        if (this.currentMission === 1 && !this.audioContext) {
+            this.initAudio();
+        }
+        
         // Reset for this mission
         this.problemsSolved = 0;
         this.activeProblems = [];
@@ -203,6 +213,9 @@ const game = {
         this.updateStatusDisplay();
         this.clearProblems();
         this.addLogEntry('Mission started. All systems nominal.', 'success');
+        
+        // Start ambient sound
+        this.playAmbient();
         
         // Show tutorial on first mission only
         if (this.currentMission === 1) {
@@ -273,6 +286,11 @@ const game = {
             
             this.timeRemaining--;
             this.updateStatusDisplay();
+            
+            // Play countdown tick in last 10 seconds
+            if (this.timeRemaining <= 10 && this.timeRemaining > 0) {
+                this.playSound('countdown');
+            }
             
             // Check for victory
             if (this.timeRemaining <= 0) {
@@ -355,6 +373,9 @@ const game = {
         this.activeProblems[slotIndex] = problem;
         this.renderProblem(problem, slotIndex + 1);
         this.addLogEntry(`New problem: ${problem.name} - ${location}`, 'danger');
+        
+        // Play alarm sound
+        this.playSound('alarm');
     },
     
     renderProblem(problem, slotNumber) {
@@ -397,9 +418,14 @@ const game = {
             if (problem.severity >= 100) {
                 // Problem reached critical - auto-fail it
                 this.addLogEntry(`${problem.name} reached critical state!`, 'danger');
+                this.playSound('critical');
                 this.failProblem(index);
             } else if (problem.severity >= 66) {
                 slot.className = 'problem-card critical';
+                // Play critical sound once when first reaching 66%
+                if (Math.floor(problem.severity - problem.degradationRate) < 66) {
+                    this.playSound('critical');
+                }
             } else if (problem.severity >= 33) {
                 slot.className = 'problem-card active';
             }
@@ -412,6 +438,9 @@ const game = {
         
         this.selectedProblem = problemIndex;
         this.selectedAction = null;
+        
+        // Play click sound
+        this.playSound('click');
         
         // Highlight the selected problem
         for (let i = 0; i < 3; i++) {
@@ -438,6 +467,9 @@ const game = {
         }
         
         this.selectedAction = action;
+        
+        // Play click sound
+        this.playSound('click');
         
         // Highlight selected action
         document.querySelectorAll('.action-btn').forEach(btn => {
@@ -483,6 +515,9 @@ const game = {
         // Remove problem
         this.activeProblems[problemIndex] = null;
         this.problemsSolved++;
+        
+        // Play success sound
+        this.playSound('success');
         
         // Restore some integrity
         const hullBefore = this.hull;
@@ -537,6 +572,9 @@ const game = {
     failProblem(problemIndex) {
         const problem = this.activeProblems[problemIndex];
         const config = this.config[this.difficulty];
+        
+        // Play failure sound
+        this.playSound('failure');
         
         // Apply damage
         this.hull -= problem.hullDamage + config.wrongActionPenalty.hull;
@@ -696,8 +734,10 @@ const game = {
     
     endGame(victory) {
         this.stopGameLoop();
+        this.stopAmbient();
         
         if (victory) {
+            this.playSound('victory');
             // Mission complete
             if (this.currentMission < 3) {
                 // More missions to go
@@ -707,6 +747,7 @@ const game = {
                 this.showOutcome(true);
             }
         } else {
+            this.playSound('defeat');
             // Mission failed
             this.showOutcome(false);
         }
@@ -770,6 +811,167 @@ const game = {
     
     restartGame() {
         location.reload();
+    },
+    
+    // ====================
+    // AUDIO SYSTEM
+    // ====================
+    
+    initAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio system initialized');
+        } catch (e) {
+            console.log('Web Audio API not supported');
+            this.audioEnabled = false;
+        }
+    },
+    
+    toggleAudio() {
+        this.audioEnabled = !this.audioEnabled;
+        const btn = document.getElementById('audio-toggle');
+        
+        if (this.audioEnabled) {
+            btn.textContent = '🔊';
+            btn.classList.remove('muted');
+            if (this.isRunning) {
+                this.playAmbient();
+            }
+        } else {
+            btn.textContent = '🔇';
+            btn.classList.add('muted');
+            this.stopAmbient();
+        }
+    },
+    
+    // Sound generation using Web Audio API
+    playSound(type) {
+        if (!this.audioEnabled || !this.audioContext) return;
+        
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+        
+        // Resume context if suspended (browser autoplay policy)
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        
+        switch(type) {
+            case 'alarm':
+                // Sharp warning beep
+                this.createBeep(800, 0.1, 0.3, 'square');
+                setTimeout(() => this.createBeep(800, 0.1, 0.3, 'square'), 150);
+                break;
+                
+            case 'success':
+                // Ascending success tone
+                this.createBeep(400, 0.05, 0.2, 'sine');
+                setTimeout(() => this.createBeep(600, 0.05, 0.2, 'sine'), 80);
+                setTimeout(() => this.createBeep(800, 0.08, 0.3, 'sine'), 160);
+                break;
+                
+            case 'failure':
+                // Harsh buzzer
+                this.createBeep(200, 0.2, 0.4, 'sawtooth');
+                setTimeout(() => this.createBeep(150, 0.2, 0.4, 'sawtooth'), 200);
+                break;
+                
+            case 'critical':
+                // Pulsing alert
+                this.createBeep(1000, 0.1, 0.5, 'triangle');
+                setTimeout(() => this.createBeep(1000, 0.1, 0.5, 'triangle'), 200);
+                setTimeout(() => this.createBeep(1000, 0.1, 0.5, 'triangle'), 400);
+                break;
+                
+            case 'click':
+                // Subtle UI click
+                this.createBeep(300, 0.02, 0.1, 'sine');
+                break;
+                
+            case 'victory':
+                // Victory fanfare
+                const notes = [523, 587, 659, 784];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => this.createBeep(freq, 0.15, 0.3, 'sine'), i * 150);
+                });
+                break;
+                
+            case 'defeat':
+                // Defeat sound
+                this.createBeep(400, 0.3, 0.5, 'sawtooth');
+                setTimeout(() => this.createBeep(300, 0.3, 0.5, 'sawtooth'), 300);
+                setTimeout(() => this.createBeep(200, 0.5, 0.6, 'sawtooth'), 600);
+                break;
+                
+            case 'countdown':
+                // Urgent tick
+                this.createBeep(1200, 0.03, 0.2, 'sine');
+                break;
+        }
+    },
+    
+    createBeep(frequency, duration, volume, type = 'sine') {
+        if (!this.audioContext) return;
+        
+        const ctx = this.audioContext;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = type;
+        
+        gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + duration);
+    },
+    
+    playAmbient() {
+        if (!this.audioEnabled || !this.audioContext) return;
+        
+        // Low rumble ambient sound
+        const ctx = this.audioContext;
+        
+        if (this.ambientSound) {
+            this.stopAmbient();
+        }
+        
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.value = 55; // Low rumble
+        
+        filter.type = 'lowpass';
+        filter.frequency.value = 200;
+        
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 2);
+        
+        oscillator.start();
+        
+        this.ambientSound = { oscillator, gainNode };
+    },
+    
+    stopAmbient() {
+        if (this.ambientSound) {
+            const ctx = this.audioContext;
+            const { oscillator, gainNode } = this.ambientSound;
+            
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+            oscillator.stop(ctx.currentTime + 1);
+            
+            this.ambientSound = null;
+        }
     }
 };
 

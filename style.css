@@ -715,6 +715,269 @@ body::after {
     display: none !important;
 }
 
+/* ==================== TUTORIAL OVERLAY ==================== */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 8, 18, 0.95);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.tutorial-panel {
+    max-width: 900px;
+    width: 90%;
+    max-height: 90vh;
+    background: var(--bg-panel);
+    border: 3px solid var(--accent-cyan);
+    padding: 40px;
+    overflow-y: auto;
+    box-shadow: 0 0 60px var(--glow-cyan);
+}
+
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--accent-cyan);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+.tutorial-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.tutorial-close {
+    font-size: 2rem;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.tutorial-close:hover {
+    color: var(--accent-cyan);
+    transform: scale(1.2);
+}
+
+.tutorial-content {
+    margin-bottom: 30px;
+}
+
+.tutorial-section {
+    margin-bottom: 30px;
+}
+
+.tutorial-section h4 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--accent-amber);
+    margin-bottom: 15px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.tutorial-section p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.action-reference {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.ref-item {
+    background: var(--bg-control);
+    padding: 15px;
+    border: 1px solid var(--border-main);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ref-icon {
+    font-size: 1.5rem;
+}
+
+.success-text {
+    color: #00ff88;
+}
+
+.danger-text {
+    color: var(--accent-red);
+}
+
+.btn-tutorial-start {
+    width: 100%;
+    padding: 20px;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--bg-deep);
+    background: var(--accent-cyan);
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    transition: all 0.3s ease;
+}
+
+.btn-tutorial-start:hover {
+    background: var(--accent-amber);
+    box-shadow: 0 0 30px var(--glow-cyan);
+    transform: scale(1.02);
+}
+
+/* ==================== PROGRESS INDICATOR ==================== */
+.progress-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-panel);
+    border: 3px solid var(--accent-cyan);
+    padding: 50px 80px;
+    text-align: center;
+    z-index: 9998;
+    box-shadow: 0 0 60px var(--glow-cyan);
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.progress-text {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #00ff88;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+}
+
+.progress-subtext {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.1em;
+}
+
+/* ==================== ENHANCED FEEDBACK ==================== */
+.problem-card.just-solved {
+    animation: solveFlash 0.5s ease;
+}
+
+@keyframes solveFlash {
+    0% { 
+        background: var(--bg-panel); 
+        border-color: var(--border-main);
+    }
+    50% { 
+        background: rgba(0, 255, 136, 0.2); 
+        border-color: #00ff88;
+        box-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
+    }
+    100% { 
+        background: var(--bg-panel); 
+        border-color: var(--border-main);
+    }
+}
+
+.problem-card.just-failed {
+    animation: failShake 0.5s ease;
+}
+
+@keyframes failShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Status value animations */
+.status-value.damage-flash {
+    animation: damageFlash 0.5s ease;
+}
+
+@keyframes damageFlash {
+    0%, 100% { color: inherit; }
+    50% { color: var(--accent-red); transform: scale(1.2); }
+}
+
+.status-value.heal-flash {
+    animation: healFlash 0.5s ease;
+}
+
+@keyframes healFlash {
+    0%, 100% { color: inherit; }
+    50% { color: #00ff88; transform: scale(1.2); }
+}
+
+/* Help button in control room */
+.help-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-control);
+    border: 2px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.help-button:hover {
+    background: var(--accent-cyan);
+    color: var(--bg-deep);
+    box-shadow: 0 0 30px var(--glow-cyan);
+    transform: scale(1.1);
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
     .problems-container {
@@ -723,6 +986,10 @@ body::after {
     
     .actions-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .action-reference {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -738,5 +1005,21 @@ body::after {
     
     .actions-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .tutorial-panel {
+        padding: 30px 20px;
+    }
+    
+    .tutorial-title {
+        font-size: 1.5rem;
+    }
+    
+    .help-button {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+        bottom: 20px;
+        right: 20px;
     }
 }

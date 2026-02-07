@@ -1,5 +1,5 @@
 // ==================== DEEP PRESSURE - GAME LOGIC ====================
-// Phase 4: AUDIO INTEGRATION & COMPLETE GAME LOOP
+// Phase 4: AUDIO INTEGRATION (SFX ONLY - NO BGM)
 
 // Game State Object
 const game = {
@@ -148,7 +148,7 @@ const game = {
         if (sound) {
             sound.volume = volume;
             sound.currentTime = 0;
-            sound.play().catch(e => console.log("Audio play blocked until user interaction"));
+            sound.play().catch(e => console.log("Audio play blocked"));
         }
     },
 
@@ -157,14 +157,10 @@ const game = {
         const btn = document.getElementById('mute-btn');
         if (btn) btn.textContent = this.isMuted ? '🔇' : '🔊';
         
-        const bgm = document.getElementById('snd-bgm');
         const alarm = document.getElementById('snd-alarm');
         
         if (this.isMuted) {
-            if (bgm) bgm.pause();
             if (alarm) alarm.pause();
-        } else if (this.isRunning) {
-            if (bgm) bgm.play();
         }
     },
 
@@ -180,23 +176,20 @@ const game = {
     },
     
     showDifficultyScreen() {
-        // First user interaction: Unlock BGM
-        this.playSound('snd-bgm', 0.3);
+        // Only click sound here, BGM removed
+        this.playSound('snd-click', 0.5);
         this.showScreen('difficulty-screen');
     },
     
     selectDifficulty(level) {
         this.playSound('snd-click', 0.5);
         this.difficulty = level;
-        console.log(`Difficulty selected: ${level}`);
         
-        // Load difficulty config
         const config = this.config[level];
         this.hull = config.startingHull;
         this.power = config.startingPower;
         this.timeRemaining = config.missionTime;
         
-        // Show first mission briefing
         this.showMissionBriefing(1);
     },
     
@@ -213,22 +206,15 @@ const game = {
     },
     
     startMission() {
-        console.log('Mission starting...');
         this.playSound('snd-click', 0.5);
         this.showScreen('control-room');
         
-        // Ensure BGM is playing when mission starts
-        const bgm = document.getElementById('snd-bgm');
-        if (bgm && !this.isMuted) bgm.play();
-
-        // Reset for this mission
         this.problemsSolved = 0;
         this.activeProblems = [];
         this.selectedProblem = null;
         this.selectedAction = null;
         this.isRunning = true;
         
-        // Set time based on current mission and difficulty
         const config = this.config[this.difficulty];
         if (this.currentMission === 1) {
             this.timeRemaining = config.missionTime;
@@ -238,24 +224,16 @@ const game = {
             this.timeRemaining = Math.floor(config.missionTime * 0.7);
         }
         
-        // Initialize UI
         this.updateStatusDisplay();
         this.clearProblems();
         this.addLogEntry('Mission started. All systems nominal.', 'success');
         
-        // Show tutorial on first mission only
         if (this.currentMission === 1) {
             this.showTutorial();
         } else {
             this.startGameLoop();
-            
-            setTimeout(() => {
-                if (this.isRunning) {
-                    this.spawnProblem();
-                }
-            }, 5000);
+            setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, 5000);
         }
-        
         this.addHelpButton();
     },
     
@@ -271,17 +249,11 @@ const game = {
         this.playSound('snd-click', 0.5);
         document.getElementById('tutorial-overlay').classList.add('hidden');
         this.startGameLoop();
-        
-        setTimeout(() => {
-            if (this.isRunning) {
-                this.spawnProblem();
-            }
-        }, 5000);
+        setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, 5000);
     },
     
     addHelpButton() {
         if (document.getElementById('help-btn')) return;
-        
         const controlRoom = document.getElementById('control-room');
         const helpBtn = document.createElement('button');
         helpBtn.id = 'help-btn';
@@ -292,7 +264,6 @@ const game = {
             this.isRunning = false;
             this.showTutorial();
         };
-        
         controlRoom.appendChild(helpBtn);
     },
     
@@ -303,28 +274,19 @@ const game = {
     startGameLoop() {
         this.gameTimer = setInterval(() => {
             if (!this.isRunning) return;
-            
             this.timeRemaining--;
             this.updateStatusDisplay();
-            this.updateGame(); // Check for audio alarms
+            this.updateGame(); 
             
-            if (this.timeRemaining <= 0) {
-                this.checkVictory();
-            }
-            
-            if (this.hull <= 0 || this.power <= 0) {
-                this.endGame(false);
-            }
+            if (this.timeRemaining <= 0) this.checkVictory();
+            if (this.hull <= 0 || this.power <= 0) this.endGame(false);
         }, 1000);
         
         const spawnRate = this.config[this.difficulty].problemSpawnRate;
         this.problemSpawnTimer = setInterval(() => {
             if (!this.isRunning) return;
-            
             const maxProblems = this.config[this.difficulty].maxProblems;
-            if (this.activeProblems.length < maxProblems) {
-                this.spawnProblem();
-            }
+            if (this.activeProblems.length < maxProblems) this.spawnProblem();
         }, spawnRate);
         
         this.degradationTimer = setInterval(() => {
@@ -334,7 +296,6 @@ const game = {
     },
 
     updateGame() {
-        // Inside loop checking for critical problems to trigger alarm
         const hasCritical = this.activeProblems.some(p => p && p.severity > 70);
         const alarm = document.getElementById('snd-alarm');
         
@@ -399,8 +360,6 @@ const game = {
         this.activeProblems[slotIndex] = problem;
         this.renderProblem(problem, slotIndex + 1);
         this.addLogEntry(`New problem: ${problem.name} - ${location}`, 'danger');
-        
-        // Alert sound for new problem
         this.playSound('snd-fail', 0.2); 
     },
     
@@ -469,12 +428,10 @@ const game = {
             this.addLogEntry('Select a problem first!', 'warning');
             return;
         }
-        
         this.selectedAction = action;
         document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('selected'));
         const btn = document.querySelector(`[data-action="${action}"]`);
         if (btn) btn.classList.add('selected');
-        
         this.executeAction();
     },
     
@@ -482,11 +439,9 @@ const game = {
         const problemIndex = this.selectedProblem;
         const problem = this.activeProblems[problemIndex];
         const action = this.selectedAction;
-        
         if (!problem || !action) return;
         
         const isCorrect = (action === problem.correctAction);
-        
         if (isCorrect) {
             this.playSound('snd-success', 0.4);
             this.solveProblem(problemIndex);
@@ -498,7 +453,6 @@ const game = {
         this.selectedProblem = null;
         this.selectedAction = null;
         this.disableActionButtons();
-        
         for (let i = 0; i < 3; i++) {
             const slot = document.getElementById(`problem-slot-${i + 1}`);
             slot.style.boxShadow = '';
@@ -556,7 +510,6 @@ const game = {
     failProblem(problemIndex) {
         const problem = this.activeProblems[problemIndex];
         const config = this.config[this.difficulty];
-        
         this.hull -= problem.hullDamage + config.wrongActionPenalty.hull;
         this.power -= problem.powerDamage + config.wrongActionPenalty.hull;
         
@@ -570,7 +523,6 @@ const game = {
         }, 500);
         
         this.addLogEntry(`${problem.name} worsened! -${config.wrongActionPenalty.hull}% hull/power`, 'danger');
-        
         for (let i = 0; i < config.wrongActionPenalty.problems; i++) {
             setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, i * 500);
         }
@@ -578,7 +530,6 @@ const game = {
         this.activeProblems[problemIndex] = null;
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
         slot.classList.add('just-failed');
-        
         setTimeout(() => {
             slot.className = 'problem-card empty';
             slot.innerHTML = `
@@ -589,21 +540,15 @@ const game = {
                 </div>
             `;
         }, 500);
-        
         this.updateStatusDisplay();
         if (this.hull <= 0 || this.power <= 0) this.endGame(false);
     },
-    
-    // ====================
-    // UI UPDATE FUNCTIONS
-    // ====================
     
     updateStatusDisplay() {
         const minutes = Math.floor(this.timeRemaining / 60);
         const seconds = this.timeRemaining % 60;
         const timerDisplay = document.getElementById('timer');
         timerDisplay.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
-        
         if (this.timeRemaining <= 30) timerDisplay.classList.add('critical');
         else timerDisplay.classList.remove('critical');
         
@@ -652,10 +597,6 @@ const game = {
         while (logContent.children.length > 5) logContent.removeChild(logContent.lastChild);
     },
     
-    // ====================
-    // GAME END CONDITIONS
-    // ====================
-    
     checkVictory() {
         if (this.hull > 0 && this.power > 0) this.endGame(true);
     },
@@ -688,17 +629,16 @@ const game = {
     showOutcome(victory) {
         const oT = document.getElementById('outcome-title');
         const oM = document.getElementById('outcome-message');
-        
         if (victory) {
             this.playSound('snd-success', 0.7);
             oT.textContent = 'MISSION COMPLETE';
             oT.className = 'outcome-title victory';
-            oM.textContent = 'All missions completed. The submarine survives. Outstanding work, Captain.';
+            oM.textContent = 'All missions completed. The submarine survives.';
         } else {
             this.playSound('snd-fail', 0.7);
             oT.textContent = 'MISSION FAILED';
             oT.className = 'outcome-title defeat';
-            oM.textContent = this.hull <= 0 ? 'Structural collapse. Submarine destroyed.' : (this.power <= 0 ? 'Total blackout. Dead in the water.' : 'System overload.');
+            oM.textContent = 'Submarine destroyed.';
         }
         
         const totalT = this.config[this.difficulty].missionTime;
@@ -707,7 +647,6 @@ const game = {
         document.getElementById('stat-solved').textContent = this.problemsSolved;
         document.getElementById('stat-hull').textContent = `${Math.max(0, Math.round(this.hull))}%`;
         document.getElementById('stat-power').textContent = `${Math.max(0, Math.round(this.power))}%`;
-        
         this.showScreen('outcome-screen');
     },
     
@@ -716,23 +655,18 @@ const game = {
     }
 };
 
-// Initialize
-console.log('DEEP PRESSURE - Audio & Logic Integrated');
-
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     if (!game.isRunning) return;
     if (e.key === '1') game.selectProblem(0);
     if (e.key === '2') game.selectProblem(1);
     if (e.key === '3') game.selectProblem(2);
-    
     if (game.selectedProblem !== null) {
         if (e.key.toLowerCase() === 's') game.selectAction('seal');
         if (e.key.toLowerCase() === 'r') game.selectAction('reroute');
         if (e.key.toLowerCase() === 'v') game.selectAction('vent');
         if (e.key.toLowerCase() === 'e') game.selectAction('emergency');
     }
-    
     if (e.key === '?' || e.key.toLowerCase() === 'h') {
         const btn = document.getElementById('help-btn');
         if (btn) btn.click();

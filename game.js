@@ -204,7 +204,36 @@ const game = {
         this.clearProblems();
         this.addLogEntry('Mission started. All systems nominal.', 'success');
         
-        // Start game loop
+        // Show tutorial on first mission only
+        if (this.currentMission === 1) {
+            this.showTutorial();
+        } else {
+            this.startGameLoop();
+            
+            // Spawn first problem after 5 seconds
+            setTimeout(() => {
+                if (this.isRunning) {
+                    this.spawnProblem();
+                }
+            }, 5000);
+        }
+        
+        // Add help button if not already present
+        this.addHelpButton();
+    },
+    
+    // ====================
+    // TUTORIAL SYSTEM
+    // ====================
+    
+    showTutorial() {
+        document.getElementById('tutorial-overlay').classList.remove('hidden');
+    },
+    
+    closeTutorial() {
+        document.getElementById('tutorial-overlay').classList.add('hidden');
+        
+        // Start game loop after closing tutorial
         this.startGameLoop();
         
         // Spawn first problem after 5 seconds
@@ -213,6 +242,24 @@ const game = {
                 this.spawnProblem();
             }
         }, 5000);
+    },
+    
+    addHelpButton() {
+        // Check if help button already exists
+        if (document.getElementById('help-btn')) return;
+        
+        // Only add in control room
+        const controlRoom = document.getElementById('control-room');
+        const helpBtn = document.createElement('button');
+        helpBtn.id = 'help-btn';
+        helpBtn.className = 'help-button';
+        helpBtn.textContent = '?';
+        helpBtn.onclick = () => {
+            this.isRunning = false;
+            this.showTutorial();
+        };
+        
+        controlRoom.appendChild(helpBtn);
     },
     
     // ====================
@@ -438,12 +485,28 @@ const game = {
         this.problemsSolved++;
         
         // Restore some integrity
+        const hullBefore = this.hull;
+        const powerBefore = this.power;
+        
         this.hull = Math.min(100, this.hull + 10);
         this.power = Math.min(100, this.power + 10);
         
-        // Clear slot
+        // Add visual feedback for healing
+        if (this.hull > hullBefore) {
+            const hullStatus = document.getElementById('hull-status');
+            hullStatus.classList.add('heal-flash');
+            setTimeout(() => hullStatus.classList.remove('heal-flash'), 500);
+        }
+        
+        if (this.power > powerBefore) {
+            const powerStatus = document.getElementById('power-status');
+            powerStatus.classList.add('heal-flash');
+            setTimeout(() => powerStatus.classList.remove('heal-flash'), 500);
+        }
+        
+        // Clear slot with success animation
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
-        slot.className = 'problem-card empty';
+        slot.className = 'problem-card just-solved';
         slot.innerHTML = `
             <div class="problem-content">
                 <div class="problem-icon">✓</div>
@@ -479,6 +542,18 @@ const game = {
         this.hull -= problem.hullDamage + config.wrongActionPenalty.hull;
         this.power -= problem.powerDamage + config.wrongActionPenalty.hull;
         
+        // Add visual feedback for damage
+        const hullStatus = document.getElementById('hull-status');
+        const powerStatus = document.getElementById('power-status');
+        
+        hullStatus.classList.add('damage-flash');
+        powerStatus.classList.add('damage-flash');
+        
+        setTimeout(() => {
+            hullStatus.classList.remove('damage-flash');
+            powerStatus.classList.remove('damage-flash');
+        }, 500);
+        
         // Log failure
         this.addLogEntry(`${problem.name} worsened! -${config.wrongActionPenalty.hull}% hull/power`, 'danger');
         
@@ -491,18 +566,22 @@ const game = {
             }, i * 500);
         }
         
-        // Remove the failed problem
+        // Remove the failed problem with shake animation
         this.activeProblems[problemIndex] = null;
         
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
-        slot.className = 'problem-card empty';
-        slot.innerHTML = `
-            <div class="problem-content">
-                <div class="problem-icon">⚠️</div>
-                <div class="problem-title">AWAITING PROBLEM</div>
-                <div class="problem-description">System monitoring active...</div>
-            </div>
-        `;
+        slot.classList.add('just-failed');
+        
+        setTimeout(() => {
+            slot.className = 'problem-card empty';
+            slot.innerHTML = `
+                <div class="problem-content">
+                    <div class="problem-icon">⚠️</div>
+                    <div class="problem-title">AWAITING PROBLEM</div>
+                    <div class="problem-description">System monitoring active...</div>
+                </div>
+            `;
+        }, 500);
         
         this.updateStatusDisplay();
         
@@ -636,11 +715,22 @@ const game = {
     showMissionComplete() {
         this.addLogEntry('Mission complete!', 'success');
         
-        // Wait 2 seconds, then show next mission briefing
+        // Show progress indicator
+        const progressIndicator = document.getElementById('progress-indicator');
+        const progressText = progressIndicator.querySelector('.progress-text');
+        const progressSubtext = progressIndicator.querySelector('.progress-subtext');
+        
+        progressText.textContent = `MISSION ${this.currentMission} COMPLETE`;
+        progressSubtext.textContent = `Preparing for Mission ${this.currentMission + 1}...`;
+        
+        progressIndicator.classList.remove('hidden');
+        
+        // Wait 3 seconds, then show next mission briefing
         setTimeout(() => {
+            progressIndicator.classList.add('hidden');
             this.currentMission++;
             this.showMissionBriefing(this.currentMission);
-        }, 2000);
+        }, 3000);
     },
     
     showOutcome(victory) {
@@ -684,5 +774,29 @@ const game = {
 };
 
 // Initialize
-console.log('DEEP PRESSURE - Phase 2 Complete');
-console.log('Full game loop active');
+console.log('DEEP PRESSURE - Phase 3 Complete');
+console.log('Full game with polish and enhanced feedback');
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (!game.isRunning) return;
+    
+    // Number keys 1-3 to select problem slots
+    if (e.key === '1') game.selectProblem(0);
+    if (e.key === '2') game.selectProblem(1);
+    if (e.key === '3') game.selectProblem(2);
+    
+    // Action shortcuts (when problem is selected)
+    if (game.selectedProblem !== null) {
+        if (e.key === 's' || e.key === 'S') game.selectAction('seal');
+        if (e.key === 'r' || e.key === 'R') game.selectAction('reroute');
+        if (e.key === 'v' || e.key === 'V') game.selectAction('vent');
+        if (e.key === 'e' || e.key === 'E') game.selectAction('emergency');
+    }
+    
+    // Help shortcut
+    if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+        const helpBtn = document.getElementById('help-btn');
+        if (helpBtn) helpBtn.click();
+    }
+});

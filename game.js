@@ -154,12 +154,16 @@ const game = {
     },
     
     showDifficultyScreen() {
+        this.playSound('click');
         this.showScreen('difficulty-screen');
     },
     
     selectDifficulty(level) {
         this.difficulty = level;
         console.log(`Difficulty selected: ${level}`);
+        
+        // Play click sound
+        this.playSound('click');
         
         // Load difficulty config
         const config = this.config[level];
@@ -186,6 +190,9 @@ const game = {
     startMission() {
         console.log('Mission starting...');
         this.showScreen('control-room');
+        
+        // Play click sound for Begin button
+        this.playSound('click');
         
         // Initialize audio on first mission
         if (this.currentMission === 1 && !this.audioContext) {
@@ -214,9 +221,6 @@ const game = {
         this.clearProblems();
         this.addLogEntry('Mission started. All systems nominal.', 'success');
         
-        // Start ambient sound
-        this.playAmbient();
-        
         // Show tutorial on first mission only
         if (this.currentMission === 1) {
             this.showTutorial();
@@ -244,6 +248,7 @@ const game = {
     },
     
     closeTutorial() {
+        this.playSound('click');
         document.getElementById('tutorial-overlay').classList.add('hidden');
         
         // Start game loop after closing tutorial
@@ -734,7 +739,6 @@ const game = {
     
     endGame(victory) {
         this.stopGameLoop();
-        this.stopAmbient();
         
         if (victory) {
             this.playSound('victory');
@@ -810,7 +814,10 @@ const game = {
     },
     
     restartGame() {
-        location.reload();
+        this.playSound('click');
+        setTimeout(() => {
+            location.reload();
+        }, 100);
     },
     
     // ====================
@@ -828,19 +835,22 @@ const game = {
     },
     
     toggleAudio() {
+        // Play click sound before toggling (so it's heard even when muting)
+        if (this.audioEnabled) {
+            this.playSound('click');
+        }
+        
         this.audioEnabled = !this.audioEnabled;
         const btn = document.getElementById('audio-toggle');
         
         if (this.audioEnabled) {
             btn.textContent = '🔊';
             btn.classList.remove('muted');
-            if (this.isRunning) {
-                this.playAmbient();
-            }
+            // Play click when unmuting
+            this.playSound('click');
         } else {
             btn.textContent = '🔇';
             btn.classList.add('muted');
-            this.stopAmbient();
         }
     },
     

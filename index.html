@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEEP PRESSURE - Submarine Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen active">
+        <div class="title-container">
+            <h1 class="game-title">DEEP PRESSURE</h1>
+            <p class="subtitle">Submarine Control</p>
+        </div>
+        <button class="btn-start" onclick="game.showDifficultyScreen()">START MISSION</button>
+    </div>
+
+    <!-- DIFFICULTY SELECTION SCREEN -->
+    <div id="difficulty-screen" class="screen">
+        <div class="difficulty-container">
+            <h2 class="difficulty-title">Select Mission Difficulty</h2>
+            <div class="difficulty-options">
+                <button class="difficulty-btn" data-level="easy" onclick="game.selectDifficulty('easy')">
+                    <div class="difficulty-label">EASY</div>
+                    <div class="difficulty-desc">Extended time limits • Slower problem escalation • Reduced penalties</div>
+                </button>
+                <button class="difficulty-btn" data-level="moderate" onclick="game.selectDifficulty('moderate')">
+                    <div class="difficulty-label">MODERATE</div>
+                    <div class="difficulty-desc">Standard submarine operations • Balanced challenge • Real consequences</div>
+                </button>
+                <button class="difficulty-btn" data-level="hard" onclick="game.selectDifficulty('hard')">
+                    <div class="difficulty-label">HARD</div>
+                    <div class="difficulty-desc">Critical systems failure • Rapid degradation • Survival by seconds</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BRIEFING SCREEN -->
+    <div id="briefing-screen" class="screen">
+        <div class="briefing-panel">
+            <div class="briefing-header">
+                <div class="mission-number" id="mission-number">MISSION 01</div>
+                <h2 class="mission-title" id="mission-title">EMERGENCY DIVE</h2>
+            </div>
+            <div class="briefing-content" id="briefing-content">
+                Enemy destroyers have detected our position. Execute emergency dive to 400 meters. 
+                Hull integrity compromised during initial descent. Multiple systems showing damage.
+                Maintain stealth protocols while managing critical failures.
+            </div>
+            <div class="briefing-objective">
+                <div class="objective-label">OBJECTIVE:</div>
+                <div id="mission-objective">Survive for 3 minutes while keeping hull and power systems operational. Reach safe depth without catastrophic failure.</div>
+            </div>
+            <button class="btn-begin" onclick="game.startMission()">BEGIN MISSION</button>
+        </div>
+    </div>
+
+    <!-- CONTROL ROOM SCREEN -->
+    <div id="control-room" class="screen">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="timer-display" id="timer">3:00</div>
+            <div class="status-indicators">
+                <div class="status-item">
+                    <div class="status-label">HULL</div>
+                    <div class="status-value" id="hull-status">100%</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">POWER</div>
+                    <div class="status-value" id="power-status">100%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="game-area">
+            <!-- Problem Cards -->
+            <div class="problems-container">
+                <div class="problem-card empty" id="problem-slot-1">
+                    <div class="problem-content">
+                        <div class="problem-icon">⚠️</div>
+                        <div class="problem-title">AWAITING PROBLEM</div>
+                        <div class="problem-description">System monitoring active...</div>
+                    </div>
+                </div>
+                <div class="problem-card empty" id="problem-slot-2">
+                    <div class="problem-content">
+                        <div class="problem-icon">⚠️</div>
+                        <div class="problem-title">AWAITING PROBLEM</div>
+                        <div class="problem-description">System monitoring active...</div>
+                    </div>
+                </div>
+                <div class="problem-card empty" id="problem-slot-3">
+                    <div class="problem-content">
+                        <div class="problem-icon">⚠️</div>
+                        <div class="problem-title">AWAITING PROBLEM</div>
+                        <div class="problem-description">System monitoring active...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Panel -->
+            <div class="actions-panel">
+                <div class="actions-title">CONTROL ACTIONS</div>
+                <div class="actions-grid">
+                    <button class="action-btn" data-action="seal" onclick="game.selectAction('seal')" disabled>
+                        SEAL
+                    </button>
+                    <button class="action-btn" data-action="reroute" onclick="game.selectAction('reroute')" disabled>
+                        REROUTE
+                    </button>
+                    <button class="action-btn" data-action="vent" onclick="game.selectAction('vent')" disabled>
+                        VENT
+                    </button>
+                    <button class="action-btn" data-action="emergency" onclick="game.selectAction('emergency')" disabled>
+                        EMERGENCY
+                    </button>
+                </div>
+                
+                <!-- Event Log -->
+                <div class="event-log">
+                    <div class="event-log-title">SYSTEM LOG</div>
+                    <div id="event-log-content">
+                        <div class="event-entry">Systems initialized. Standing by...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OUTCOME SCREEN (Victory/Defeat) -->
+    <div id="outcome-screen" class="screen">
+        <div class="outcome-panel">
+            <h2 class="outcome-title" id="outcome-title">MISSION COMPLETE</h2>
+            <p class="outcome-message" id="outcome-message">You have successfully completed the mission.</p>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Time Survived</div>
+                    <div class="stat-value" id="stat-time">3:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Problems Solved</div>
+                    <div class="stat-value" id="stat-solved">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Final Hull</div>
+                    <div class="stat-value" id="stat-hull">100%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Final Power</div>
+                    <div class="stat-value" id="stat-power">100%</div>
+                </div>
+            </div>
+            
+            <button class="btn-restart" onclick="game.restartGame()">RESTART MISSION</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

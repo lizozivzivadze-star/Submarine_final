@@ -176,13 +176,10 @@ const game = {
     },
     
     showDifficultyScreen() {
-        // Only click sound here, BGM removed
-        this.playSound('snd-click', 0.5);
         this.showScreen('difficulty-screen');
     },
     
     selectDifficulty(level) {
-        this.playSound('snd-click', 0.5);
         this.difficulty = level;
         
         const config = this.config[level];
@@ -206,7 +203,6 @@ const game = {
     },
     
     startMission() {
-        this.playSound('snd-click', 0.5);
         this.showScreen('control-room');
         
         this.problemsSolved = 0;
@@ -246,7 +242,6 @@ const game = {
     },
     
     closeTutorial() {
-        this.playSound('snd-click', 0.5);
         document.getElementById('tutorial-overlay').classList.add('hidden');
         this.startGameLoop();
         setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, 5000);
@@ -260,7 +255,6 @@ const game = {
         helpBtn.className = 'help-button';
         helpBtn.textContent = '?';
         helpBtn.onclick = () => {
-            this.playSound('snd-click', 0.5);
             this.isRunning = false;
             this.showTutorial();
         };
@@ -404,7 +398,6 @@ const game = {
         const problem = this.activeProblems[problemIndex];
         if (!problem) return;
         
-        this.playSound('snd-click', 0.4);
         this.selectedProblem = problemIndex;
         this.selectedAction = null;
         
@@ -654,6 +647,14 @@ const game = {
         location.reload();
     }
 };
+
+// ==================== THE PRO TIP ====================
+// This automatically finds every button and adds the click sound to it
+document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        game.playSound('snd-click', 0.5);
+    }
+});
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {

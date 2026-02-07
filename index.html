@@ -162,6 +162,70 @@
         </div>
     </div>
 
+    <!-- TUTORIAL OVERLAY -->
+    <div id="tutorial-overlay" class="tutorial-overlay hidden">
+        <div class="tutorial-panel">
+            <div class="tutorial-header">
+                <h3 class="tutorial-title">CONTROL ROOM BRIEFING</h3>
+                <button class="tutorial-close" onclick="game.closeTutorial()">✕</button>
+            </div>
+            <div class="tutorial-content">
+                <div class="tutorial-section">
+                    <h4>OBJECTIVE</h4>
+                    <p>Keep the submarine operational by managing critical system failures. Survive until the mission timer reaches zero.</p>
+                </div>
+                
+                <div class="tutorial-section">
+                    <h4>PROBLEM MANAGEMENT</h4>
+                    <p>Problems appear in the slots above and worsen over time (watch the severity bar). Click <strong>FIX IT</strong> to select a problem, then choose the correct action.</p>
+                </div>
+                
+                <div class="tutorial-section">
+                    <h4>ACTION REFERENCE</h4>
+                    <div class="action-reference">
+                        <div class="ref-item"><span class="ref-icon">💧</span> <strong>FLOODING</strong> → SEAL</div>
+                        <div class="ref-item"><span class="ref-icon">🔧</span> <strong>STRUCTURAL CRACK</strong> → SEAL</div>
+                        <div class="ref-item"><span class="ref-icon">⚡</span> <strong>POWER FAILURE</strong> → REROUTE</div>
+                        <div class="ref-item"><span class="ref-icon">⚠️</span> <strong>SYSTEM OVERLOAD</strong> → REROUTE</div>
+                        <div class="ref-item"><span class="ref-icon">🔴</span> <strong>PRESSURE BREACH</strong> → VENT</div>
+                        <div class="ref-item"><span class="ref-icon">🔥</span> <strong>FIRE</strong> → EMERGENCY</div>
+                    </div>
+                </div>
+                
+                <div class="tutorial-section">
+                    <h4>CONSEQUENCES</h4>
+                    <p><strong class="success-text">Correct Action:</strong> Problem solved, +10% systems restored</p>
+                    <p><strong class="danger-text">Wrong Action:</strong> Problem fails, spawns new problems, -10-15% damage</p>
+                    <p><strong class="danger-text">Ignored:</strong> Problem reaches critical and auto-fails</p>
+                </div>
+                
+                <div class="tutorial-section">
+                    <h4>FAILURE CONDITIONS</h4>
+                    <p>Mission fails if Hull ≤ 0%, Power ≤ 0%, or too many active problems.</p>
+                </div>
+                
+                <div class="tutorial-section">
+                    <h4>KEYBOARD SHORTCUTS (Optional)</h4>
+                    <div class="action-reference">
+                        <div class="ref-item"><strong>1, 2, 3</strong> - Select problem slot</div>
+                        <div class="ref-item"><strong>S</strong> - SEAL action</div>
+                        <div class="ref-item"><strong>R</strong> - REROUTE action</div>
+                        <div class="ref-item"><strong>V</strong> - VENT action</div>
+                        <div class="ref-item"><strong>E</strong> - EMERGENCY action</div>
+                        <div class="ref-item"><strong>? or H</strong> - Show this help</div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-tutorial-start" onclick="game.closeTutorial()">UNDERSTOOD - BEGIN MISSION</button>
+        </div>
+    </div>
+
+    <!-- PROGRESS INDICATOR -->
+    <div id="progress-indicator" class="progress-indicator hidden">
+        <div class="progress-text">MISSION COMPLETE</div>
+        <div class="progress-subtext">Prepare for next mission...</div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>

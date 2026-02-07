@@ -1023,22 +1023,3 @@ body::after {
         right: 20px;
     }
 }
-
-.mute-button {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(19, 40, 66, 0.7);
-    border: 1px solid var(--accent-cyan);
-    color: var(--accent-cyan);
-    padding: 10px;
-    cursor: pointer;
-    z-index: 1000;
-    font-family: var(--font-mono);
-    border-radius: 4px;
-}
-
-.mute-button:hover {
-    background: var(--accent-cyan);
-    color: var(--bg-deep);
-}

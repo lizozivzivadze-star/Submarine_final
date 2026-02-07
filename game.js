@@ -154,6 +154,10 @@ const game = {
     },
     
     showDifficultyScreen() {
+        // Initialize audio on first interaction (browser requires user gesture)
+        if (!this.audioContext) {
+            this.initAudio();
+        }
         this.playSound('click');
         this.showScreen('difficulty-screen');
     },
@@ -191,13 +195,13 @@ const game = {
         console.log('Mission starting...');
         this.showScreen('control-room');
         
-        // Play click sound for Begin button
-        this.playSound('click');
-        
-        // Initialize audio on first mission
+        // Initialize audio on first mission (before playing sound)
         if (this.currentMission === 1 && !this.audioContext) {
             this.initAudio();
         }
+        
+        // Play click sound for Begin button
+        this.playSound('click');
         
         // Reset for this mission
         this.problemsSolved = 0;

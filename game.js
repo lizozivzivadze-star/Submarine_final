@@ -1,5 +1,5 @@
 // ==================== DEEP PRESSURE - GAME LOGIC ====================
-// Phase 4: AUDIO INTEGRATION (SFX ONLY - NO BGM)
+// Phase 2: COMPLETE GAME LOOP IMPLEMENTATION
 
 // Game State Object
 const game = {
@@ -25,8 +25,7 @@ const game = {
     
     // Game State
     isRunning: false,
-    isMuted: false,
-
+    
     // Constants will be set based on difficulty
     config: {
         easy: {
@@ -137,33 +136,7 @@ const game = {
             objective: 'Survive 2 minutes of maximum chaos. Victory requires reaching the surface with any hull and power remaining. This is the end.'
         }
     ],
-
-    // ====================
-    // AUDIO CONTROL METHODS
-    // ====================
     
-    playSound(id, volume = 0.5) {
-        if (this.isMuted) return;
-        const sound = document.getElementById(id);
-        if (sound) {
-            sound.volume = volume;
-            sound.currentTime = 0;
-            sound.play().catch(e => console.log("Audio play blocked"));
-        }
-    },
-
-    toggleAudio() {
-        this.isMuted = !this.isMuted;
-        const btn = document.getElementById('mute-btn');
-        if (btn) btn.textContent = this.isMuted ? '🔇' : '🔊';
-        
-        const alarm = document.getElementById('snd-alarm');
-        
-        if (this.isMuted) {
-            if (alarm) alarm.pause();
-        }
-    },
-
     // ====================
     // SCREEN TRANSITIONS
     // ====================
@@ -181,12 +154,15 @@ const game = {
     
     selectDifficulty(level) {
         this.difficulty = level;
+        console.log(`Difficulty selected: ${level}`);
         
+        // Load difficulty config
         const config = this.config[level];
         this.hull = config.startingHull;
         this.power = config.startingPower;
         this.timeRemaining = config.missionTime;
         
+        // Show first mission briefing
         this.showMissionBriefing(1);
     },
     
@@ -203,33 +179,46 @@ const game = {
     },
     
     startMission() {
+        console.log('Mission starting...');
         this.showScreen('control-room');
         
+        // Reset for this mission
         this.problemsSolved = 0;
         this.activeProblems = [];
         this.selectedProblem = null;
         this.selectedAction = null;
         this.isRunning = true;
         
+        // Set time based on current mission and difficulty
         const config = this.config[this.difficulty];
         if (this.currentMission === 1) {
             this.timeRemaining = config.missionTime;
         } else if (this.currentMission === 2) {
-            this.timeRemaining = Math.floor(config.missionTime * 0.85);
+            this.timeRemaining = Math.floor(config.missionTime * 0.85); // 15% less time
         } else if (this.currentMission === 3) {
-            this.timeRemaining = Math.floor(config.missionTime * 0.7);
+            this.timeRemaining = Math.floor(config.missionTime * 0.7); // 30% less time
         }
         
+        // Initialize UI
         this.updateStatusDisplay();
         this.clearProblems();
         this.addLogEntry('Mission started. All systems nominal.', 'success');
         
+        // Show tutorial on first mission only
         if (this.currentMission === 1) {
             this.showTutorial();
         } else {
             this.startGameLoop();
-            setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, 5000);
+            
+            // Spawn first problem after 5 seconds
+            setTimeout(() => {
+                if (this.isRunning) {
+                    this.spawnProblem();
+                }
+            }, 5000);
         }
+        
+        // Add help button if not already present
         this.addHelpButton();
     },
     
@@ -243,12 +232,23 @@ const game = {
     
     closeTutorial() {
         document.getElementById('tutorial-overlay').classList.add('hidden');
+        
+        // Start game loop after closing tutorial
         this.startGameLoop();
-        setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, 5000);
+        
+        // Spawn first problem after 5 seconds
+        setTimeout(() => {
+            if (this.isRunning) {
+                this.spawnProblem();
+            }
+        }, 5000);
     },
     
     addHelpButton() {
+        // Check if help button already exists
         if (document.getElementById('help-btn')) return;
+        
+        // Only add in control room
         const controlRoom = document.getElementById('control-room');
         const helpBtn = document.createElement('button');
         helpBtn.id = 'help-btn';
@@ -258,6 +258,7 @@ const game = {
             this.isRunning = false;
             this.showTutorial();
         };
+        
         controlRoom.appendChild(helpBtn);
     },
     
@@ -266,53 +267,48 @@ const game = {
     // ====================
     
     startGameLoop() {
+        // Main timer - counts down every second
         this.gameTimer = setInterval(() => {
             if (!this.isRunning) return;
+            
             this.timeRemaining--;
             this.updateStatusDisplay();
-            this.updateGame(); 
             
-            if (this.timeRemaining <= 0) this.checkVictory();
-            if (this.hull <= 0 || this.power <= 0) this.endGame(false);
+            // Check for victory
+            if (this.timeRemaining <= 0) {
+                this.checkVictory();
+            }
+            
+            // Check for defeat
+            if (this.hull <= 0 || this.power <= 0) {
+                this.endGame(false);
+            }
         }, 1000);
         
+        // Problem spawner - creates new problems periodically
         const spawnRate = this.config[this.difficulty].problemSpawnRate;
         this.problemSpawnTimer = setInterval(() => {
             if (!this.isRunning) return;
+            
             const maxProblems = this.config[this.difficulty].maxProblems;
-            if (this.activeProblems.length < maxProblems) this.spawnProblem();
+            if (this.activeProblems.length < maxProblems) {
+                this.spawnProblem();
+            }
         }, spawnRate);
         
+        // Degradation timer - makes problems worse over time
         this.degradationTimer = setInterval(() => {
             if (!this.isRunning) return;
             this.degradeProblems();
         }, 1000);
     },
-
-    updateGame() {
-        const hasCritical = this.activeProblems.some(p => p && p.severity > 70);
-        const alarm = document.getElementById('snd-alarm');
-        
-        if (alarm) {
-            if (hasCritical && !this.isMuted && this.isRunning) {
-                if (alarm.paused) {
-                    alarm.volume = 0.4;
-                    alarm.play().catch(e => {});
-                }
-            } else {
-                alarm.pause();
-            }
-        }
-    },
     
     stopGameLoop() {
         this.isRunning = false;
+        
         if (this.gameTimer) clearInterval(this.gameTimer);
         if (this.problemSpawnTimer) clearInterval(this.problemSpawnTimer);
         if (this.degradationTimer) clearInterval(this.degradationTimer);
-        
-        const alarm = document.getElementById('snd-alarm');
-        if (alarm) alarm.pause();
     },
     
     // ====================
@@ -323,11 +319,15 @@ const game = {
         const maxProblems = this.config[this.difficulty].maxProblems;
         if (this.activeProblems.length >= maxProblems) return;
         
+        // Get random problem type
         const problemKeys = Object.keys(this.problemTypes);
         const randomKey = problemKeys[Math.floor(Math.random() * problemKeys.length)];
         const problemType = this.problemTypes[randomKey];
+        
+        // Get random location
         const location = problemType.location[Math.floor(Math.random() * problemType.location.length)];
         
+        // Create problem object
         const problem = {
             id: Date.now(),
             type: randomKey,
@@ -337,10 +337,11 @@ const game = {
             correctAction: problemType.correctAction,
             hullDamage: problemType.hullDamage,
             powerDamage: problemType.powerDamage,
-            severity: 0,
-            degradationRate: 100 / (this.config[this.difficulty].problemDegradationRate / 1000)
+            severity: 0, // 0-100
+            degradationRate: 100 / (this.config[this.difficulty].problemDegradationRate / 1000) // % per second
         };
         
+        // Find empty slot
         let slotIndex = -1;
         for (let i = 0; i < maxProblems; i++) {
             if (!this.activeProblems[i]) {
@@ -354,11 +355,11 @@ const game = {
         this.activeProblems[slotIndex] = problem;
         this.renderProblem(problem, slotIndex + 1);
         this.addLogEntry(`New problem: ${problem.name} - ${location}`, 'danger');
-        this.playSound('snd-fail', 0.2); 
     },
     
     renderProblem(problem, slotNumber) {
         const slot = document.getElementById(`problem-slot-${slotNumber}`);
+        
         slot.className = 'problem-card active';
         slot.innerHTML = `
             <div class="problem-content">
@@ -376,14 +377,25 @@ const game = {
     degradeProblems() {
         this.activeProblems.forEach((problem, index) => {
             if (!problem) return;
-            problem.severity += problem.degradationRate;
-            if (problem.severity > 100) problem.severity = 100;
             
+            // Increase severity
+            problem.severity += problem.degradationRate;
+            
+            // Cap at 100%
+            if (problem.severity > 100) {
+                problem.severity = 100;
+            }
+            
+            // Update visual
             const slot = document.getElementById(`problem-slot-${index + 1}`);
             const severityFill = slot.querySelector('.severity-fill');
-            if (severityFill) severityFill.style.width = `${problem.severity}%`;
+            if (severityFill) {
+                severityFill.style.width = `${problem.severity}%`;
+            }
             
+            // Apply damage based on severity
             if (problem.severity >= 100) {
+                // Problem reached critical - auto-fail it
                 this.addLogEntry(`${problem.name} reached critical state!`, 'danger');
                 this.failProblem(index);
             } else if (problem.severity >= 66) {
@@ -401,9 +413,11 @@ const game = {
         this.selectedProblem = problemIndex;
         this.selectedAction = null;
         
+        // Highlight the selected problem
         for (let i = 0; i < 3; i++) {
             const slot = document.getElementById(`problem-slot-${i + 1}`);
             if (i === problemIndex && this.activeProblems[i]) {
+                // Keep existing class and add highlight
                 if (!slot.className.includes('critical')) {
                     slot.style.boxShadow = '0 0 30px var(--accent-cyan)';
                 }
@@ -412,6 +426,7 @@ const game = {
             }
         }
         
+        // Enable action buttons
         this.enableActionButtons();
         this.addLogEntry(`Problem selected: ${problem.name}`, 'warning');
     },
@@ -421,10 +436,16 @@ const game = {
             this.addLogEntry('Select a problem first!', 'warning');
             return;
         }
+        
         this.selectedAction = action;
-        document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('selected'));
-        const btn = document.querySelector(`[data-action="${action}"]`);
-        if (btn) btn.classList.add('selected');
+        
+        // Highlight selected action
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        document.querySelector(`[data-action="${action}"]`).classList.add('selected');
+        
+        // Execute action immediately
         this.executeAction();
     },
     
@@ -432,20 +453,24 @@ const game = {
         const problemIndex = this.selectedProblem;
         const problem = this.activeProblems[problemIndex];
         const action = this.selectedAction;
+        
         if (!problem || !action) return;
         
-        const isCorrect = (action === problem.correctAction);
-        if (isCorrect) {
-            this.playSound('snd-success', 0.4);
+        // Check if action is correct
+        if (action === problem.correctAction) {
+            // SUCCESS
             this.solveProblem(problemIndex);
         } else {
-            this.playSound('snd-fail', 0.5);
+            // FAILURE
             this.failProblem(problemIndex);
         }
         
+        // Reset selection
         this.selectedProblem = null;
         this.selectedAction = null;
         this.disableActionButtons();
+        
+        // Remove highlight
         for (let i = 0; i < 3; i++) {
             const slot = document.getElementById(`problem-slot-${i + 1}`);
             slot.style.boxShadow = '';
@@ -454,25 +479,32 @@ const game = {
     
     solveProblem(problemIndex) {
         const problem = this.activeProblems[problemIndex];
+        
+        // Remove problem
         this.activeProblems[problemIndex] = null;
         this.problemsSolved++;
         
+        // Restore some integrity
         const hullBefore = this.hull;
         const powerBefore = this.power;
+        
         this.hull = Math.min(100, this.hull + 10);
         this.power = Math.min(100, this.power + 10);
         
+        // Add visual feedback for healing
         if (this.hull > hullBefore) {
-            const el = document.getElementById('hull-status');
-            el.classList.add('heal-flash');
-            setTimeout(() => el.classList.remove('heal-flash'), 500);
-        }
-        if (this.power > powerBefore) {
-            const el = document.getElementById('power-status');
-            el.classList.add('heal-flash');
-            setTimeout(() => el.classList.remove('heal-flash'), 500);
+            const hullStatus = document.getElementById('hull-status');
+            hullStatus.classList.add('heal-flash');
+            setTimeout(() => hullStatus.classList.remove('heal-flash'), 500);
         }
         
+        if (this.power > powerBefore) {
+            const powerStatus = document.getElementById('power-status');
+            powerStatus.classList.add('heal-flash');
+            setTimeout(() => powerStatus.classList.remove('heal-flash'), 500);
+        }
+        
+        // Clear slot with success animation
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
         slot.className = 'problem-card just-solved';
         slot.innerHTML = `
@@ -483,9 +515,11 @@ const game = {
             </div>
         `;
         
+        // Log success
         this.addLogEntry(`${problem.name} resolved successfully! +10% systems`, 'success');
         this.updateStatusDisplay();
         
+        // Return to empty state after 2 seconds
         setTimeout(() => {
             if (!this.activeProblems[problemIndex]) {
                 slot.className = 'problem-card empty';
@@ -503,26 +537,41 @@ const game = {
     failProblem(problemIndex) {
         const problem = this.activeProblems[problemIndex];
         const config = this.config[this.difficulty];
+        
+        // Apply damage
         this.hull -= problem.hullDamage + config.wrongActionPenalty.hull;
         this.power -= problem.powerDamage + config.wrongActionPenalty.hull;
         
-        const hS = document.getElementById('hull-status');
-        const pS = document.getElementById('power-status');
-        hS.classList.add('damage-flash');
-        pS.classList.add('damage-flash');
+        // Add visual feedback for damage
+        const hullStatus = document.getElementById('hull-status');
+        const powerStatus = document.getElementById('power-status');
+        
+        hullStatus.classList.add('damage-flash');
+        powerStatus.classList.add('damage-flash');
+        
         setTimeout(() => {
-            hS.classList.remove('damage-flash');
-            pS.classList.remove('damage-flash');
+            hullStatus.classList.remove('damage-flash');
+            powerStatus.classList.remove('damage-flash');
         }, 500);
         
+        // Log failure
         this.addLogEntry(`${problem.name} worsened! -${config.wrongActionPenalty.hull}% hull/power`, 'danger');
+        
+        // Spawn additional problems as penalty
         for (let i = 0; i < config.wrongActionPenalty.problems; i++) {
-            setTimeout(() => { if (this.isRunning) this.spawnProblem(); }, i * 500);
+            setTimeout(() => {
+                if (this.isRunning) {
+                    this.spawnProblem();
+                }
+            }, i * 500);
         }
         
+        // Remove the failed problem with shake animation
         this.activeProblems[problemIndex] = null;
+        
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
         slot.classList.add('just-failed');
+        
         setTimeout(() => {
             slot.className = 'problem-card empty';
             slot.innerHTML = `
@@ -533,25 +582,62 @@ const game = {
                 </div>
             `;
         }, 500);
+        
         this.updateStatusDisplay();
-        if (this.hull <= 0 || this.power <= 0) this.endGame(false);
+        
+        // Check for defeat
+        if (this.hull <= 0 || this.power <= 0) {
+            this.endGame(false);
+        }
+        
+        // Check for too many active problems
+        const activeCount = this.activeProblems.filter(p => p !== null).length;
+        if (activeCount >= 4) {
+            this.endGame(false);
+        }
     },
     
+    // ====================
+    // UI UPDATE FUNCTIONS
+    // ====================
+    
     updateStatusDisplay() {
+        // Update timer
         const minutes = Math.floor(this.timeRemaining / 60);
         const seconds = this.timeRemaining % 60;
         const timerDisplay = document.getElementById('timer');
         timerDisplay.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
-        if (this.timeRemaining <= 30) timerDisplay.classList.add('critical');
-        else timerDisplay.classList.remove('critical');
         
-        const hS = document.getElementById('hull-status');
-        hS.textContent = `${Math.max(0, Math.round(this.hull))}%`;
-        hS.className = this.hull > 50 ? 'status-value' : (this.hull > 25 ? 'status-value warning' : 'status-value critical');
+        // Add critical class if under 30 seconds
+        if (this.timeRemaining <= 30) {
+            timerDisplay.classList.add('critical');
+        } else {
+            timerDisplay.classList.remove('critical');
+        }
         
-        const pS = document.getElementById('power-status');
-        pS.textContent = `${Math.max(0, Math.round(this.power))}%`;
-        pS.className = this.power > 50 ? 'status-value' : (this.power > 25 ? 'status-value warning' : 'status-value critical');
+        // Update hull
+        const hullStatus = document.getElementById('hull-status');
+        hullStatus.textContent = `${Math.max(0, Math.round(this.hull))}%`;
+        
+        if (this.hull > 50) {
+            hullStatus.className = 'status-value';
+        } else if (this.hull > 25) {
+            hullStatus.className = 'status-value warning';
+        } else {
+            hullStatus.className = 'status-value critical';
+        }
+        
+        // Update power
+        const powerStatus = document.getElementById('power-status');
+        powerStatus.textContent = `${Math.max(0, Math.round(this.power))}%`;
+        
+        if (this.power > 50) {
+            powerStatus.className = 'status-value';
+        } else if (this.power > 25) {
+            powerStatus.className = 'status-value warning';
+        } else {
+            powerStatus.className = 'status-value critical';
+        }
     },
     
     clearProblems() {
@@ -566,6 +652,7 @@ const game = {
                 </div>
             `;
         }
+        
         this.activeProblems = [];
         this.disableActionButtons();
     },
@@ -578,7 +665,9 @@ const game = {
     },
     
     enableActionButtons() {
-        document.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.disabled = false;
+        });
     },
     
     addLogEntry(message, type = 'info') {
@@ -586,60 +675,96 @@ const game = {
         const entry = document.createElement('div');
         entry.className = `event-entry ${type}`;
         entry.textContent = message;
+        
         logContent.insertBefore(entry, logContent.firstChild);
-        while (logContent.children.length > 5) logContent.removeChild(logContent.lastChild);
+        
+        // Keep only last 5 entries
+        while (logContent.children.length > 5) {
+            logContent.removeChild(logContent.lastChild);
+        }
     },
     
+    // ====================
+    // GAME END CONDITIONS
+    // ====================
+    
     checkVictory() {
-        if (this.hull > 0 && this.power > 0) this.endGame(true);
+        if (this.hull > 0 && this.power > 0) {
+            this.endGame(true);
+        }
     },
     
     endGame(victory) {
         this.stopGameLoop();
+        
         if (victory) {
-            if (this.currentMission < 3) this.showMissionComplete();
-            else this.showOutcome(true);
+            // Mission complete
+            if (this.currentMission < 3) {
+                // More missions to go
+                this.showMissionComplete();
+            } else {
+                // All missions complete - final victory
+                this.showOutcome(true);
+            }
         } else {
+            // Mission failed
             this.showOutcome(false);
         }
     },
     
     showMissionComplete() {
-        this.playSound('snd-success', 0.6);
         this.addLogEntry('Mission complete!', 'success');
-        const pI = document.getElementById('progress-indicator');
-        pI.querySelector('.progress-text').textContent = `MISSION ${this.currentMission} COMPLETE`;
-        pI.querySelector('.progress-subtext').textContent = `Preparing for Mission ${this.currentMission + 1}...`;
-        pI.classList.remove('hidden');
         
+        // Show progress indicator
+        const progressIndicator = document.getElementById('progress-indicator');
+        const progressText = progressIndicator.querySelector('.progress-text');
+        const progressSubtext = progressIndicator.querySelector('.progress-subtext');
+        
+        progressText.textContent = `MISSION ${this.currentMission} COMPLETE`;
+        progressSubtext.textContent = `Preparing for Mission ${this.currentMission + 1}...`;
+        
+        progressIndicator.classList.remove('hidden');
+        
+        // Wait 3 seconds, then show next mission briefing
         setTimeout(() => {
-            pI.classList.add('hidden');
+            progressIndicator.classList.add('hidden');
             this.currentMission++;
             this.showMissionBriefing(this.currentMission);
         }, 3000);
     },
     
     showOutcome(victory) {
-        const oT = document.getElementById('outcome-title');
-        const oM = document.getElementById('outcome-message');
+        const outcomeTitle = document.getElementById('outcome-title');
+        const outcomeMessage = document.getElementById('outcome-message');
+        
         if (victory) {
-            this.playSound('snd-success', 0.7);
-            oT.textContent = 'MISSION COMPLETE';
-            oT.className = 'outcome-title victory';
-            oM.textContent = 'All missions completed. The submarine survives.';
+            outcomeTitle.textContent = 'MISSION COMPLETE';
+            outcomeTitle.className = 'outcome-title victory';
+            outcomeMessage.textContent = 'All missions completed. The submarine survives. Outstanding work, Captain.';
         } else {
-            this.playSound('snd-fail', 0.7);
-            oT.textContent = 'MISSION FAILED';
-            oT.className = 'outcome-title defeat';
-            oM.textContent = 'Submarine destroyed.';
+            outcomeTitle.textContent = 'MISSION FAILED';
+            outcomeTitle.className = 'outcome-title defeat';
+            
+            if (this.hull <= 0) {
+                outcomeMessage.textContent = 'Structural collapse. The submarine has been destroyed.';
+            } else if (this.power <= 0) {
+                outcomeMessage.textContent = 'Total blackout. All systems offline. The submarine is dead in the water.';
+            } else {
+                outcomeMessage.textContent = 'System overload. Too many critical failures. The crew has abandoned ship.';
+            }
         }
         
-        const totalT = this.config[this.difficulty].missionTime;
-        const survived = totalT - this.timeRemaining;
-        document.getElementById('stat-time').textContent = `${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}`;
+        // Update stats
+        const totalTime = this.config[this.difficulty].missionTime;
+        const timeSurvived = totalTime - this.timeRemaining;
+        const minutes = Math.floor(timeSurvived / 60);
+        const seconds = timeSurvived % 60;
+        
+        document.getElementById('stat-time').textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
         document.getElementById('stat-solved').textContent = this.problemsSolved;
         document.getElementById('stat-hull').textContent = `${Math.max(0, Math.round(this.hull))}%`;
         document.getElementById('stat-power').textContent = `${Math.max(0, Math.round(this.power))}%`;
+        
         this.showScreen('outcome-screen');
     },
     
@@ -648,28 +773,30 @@ const game = {
     }
 };
 
-// ==================== THE PRO TIP ====================
-// This automatically finds every button and adds the click sound to it
-document.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') {
-        game.playSound('snd-click', 0.5);
-    }
-});
+// Initialize
+console.log('DEEP PRESSURE - Phase 3 Complete');
+console.log('Full game with polish and enhanced feedback');
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     if (!game.isRunning) return;
+    
+    // Number keys 1-3 to select problem slots
     if (e.key === '1') game.selectProblem(0);
     if (e.key === '2') game.selectProblem(1);
     if (e.key === '3') game.selectProblem(2);
+    
+    // Action shortcuts (when problem is selected)
     if (game.selectedProblem !== null) {
-        if (e.key.toLowerCase() === 's') game.selectAction('seal');
-        if (e.key.toLowerCase() === 'r') game.selectAction('reroute');
-        if (e.key.toLowerCase() === 'v') game.selectAction('vent');
-        if (e.key.toLowerCase() === 'e') game.selectAction('emergency');
+        if (e.key === 's' || e.key === 'S') game.selectAction('seal');
+        if (e.key === 'r' || e.key === 'R') game.selectAction('reroute');
+        if (e.key === 'v' || e.key === 'V') game.selectAction('vent');
+        if (e.key === 'e' || e.key === 'E') game.selectAction('emergency');
     }
-    if (e.key === '?' || e.key.toLowerCase() === 'h') {
-        const btn = document.getElementById('help-btn');
-        if (btn) btn.click();
+    
+    // Help shortcut
+    if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+        const helpBtn = document.getElementById('help-btn');
+        if (helpBtn) helpBtn.click();
     }
 });

@@ -183,10 +183,32 @@ const game = {
         const mission = this.missions[missionNumber - 1];
         this.currentMission = missionNumber;
         
+        // Calculate time for this mission and difficulty
+        const config = this.config[this.difficulty];
+        let missionTime = config.missionTime;
+        if (missionNumber === 2) {
+            missionTime = Math.floor(config.missionTime * 0.85);
+        } else if (missionNumber === 3) {
+            missionTime = Math.floor(config.missionTime * 0.7);
+        }
+        const minutes = Math.floor(missionTime / 60);
+        const seconds = missionTime % 60;
+        const timeString = seconds > 0 ? `${minutes}:${String(seconds).padStart(2, '0')} minutes` : `${minutes} minutes`;
+        
+        // Update objective with actual time
+        let objective = mission.objective;
+        if (missionNumber === 1) {
+            objective = `Survive for ${timeString} while keeping hull and power systems operational. Reach safe depth without catastrophic failure.`;
+        } else if (missionNumber === 2) {
+            objective = `Stabilize critical systems for ${timeString}. Hull damage carries forward from previous mission. Failure is not an option.`;
+        } else if (missionNumber === 3) {
+            objective = `Survive ${timeString} of maximum chaos. Victory requires reaching the surface with any hull and power remaining. This is the end.`;
+        }
+        
         document.getElementById('mission-number').textContent = `MISSION ${String(missionNumber).padStart(2, '0')}`;
         document.getElementById('mission-title').textContent = mission.title;
         document.getElementById('briefing-content').textContent = mission.briefing;
-        document.getElementById('mission-objective').textContent = mission.objective;
+        document.getElementById('mission-objective').textContent = objective;
         
         this.showScreen('briefing-screen');
     },
@@ -604,21 +626,13 @@ const game = {
         // Log failure
         this.addLogEntry(`${problem.name} worsened! -${config.wrongActionPenalty.hull}% hull/power`, 'danger');
         
-        // Spawn additional problems as penalty
-        for (let i = 0; i < config.wrongActionPenalty.problems; i++) {
-            setTimeout(() => {
-                if (this.isRunning) {
-                    this.spawnProblem();
-                }
-            }, i * 500);
-        }
-        
-        // Remove the failed problem with shake animation
+        // Remove the failed problem IMMEDIATELY
         this.activeProblems[problemIndex] = null;
         
         const slot = document.getElementById(`problem-slot-${problemIndex + 1}`);
         slot.classList.add('just-failed');
         
+        // Clear the slot with visual feedback
         setTimeout(() => {
             slot.className = 'problem-card empty';
             slot.innerHTML = `
@@ -628,6 +642,16 @@ const game = {
                     <div class="problem-description">System monitoring active...</div>
                 </div>
             `;
+        }, 500);
+        
+        // Spawn additional problems as penalty AFTER slot is cleared
+        for (let i = 0; i < config.wrongActionPenalty.problems; i++) {
+            setTimeout(() => {
+                if (this.isRunning) {
+                    this.spawnProblem();
+                }
+            }, 600 + (i * 500)); // Wait for slot to clear first
+        }
         }, 500);
         
         this.updateStatusDisplay();
